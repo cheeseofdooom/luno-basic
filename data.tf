@@ -33,7 +33,7 @@ data "template_file" "dockercompose" {
     dbhost        = aws_db_instance.wordpressdb.endpoint
     dbuser        = aws_db_instance.wordpressdb.username
     dbpassword    = aws_db_instance.wordpressdb.password
-    dbname        = aws_db_instance.wordpressdb.database_name
+    dbname        = aws_db_instance.wordpressdb.name
     external_port = var.wordpress_external_port
   }
 }

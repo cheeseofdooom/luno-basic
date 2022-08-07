@@ -54,7 +54,7 @@ resource "aws_db_subnet_group" "dbsubnet" {
     name = "wordpress-subnet"
     description = "word press subnet group"
     subnet_ids = data.aws_subnet_ids.subnets.ids
-    tags = local.tags
+   # tags = local.tags
   
 }
 
@@ -64,7 +64,7 @@ resource "aws_iam_role" "ec2role" {
 
     assume_role_policy = <<EOF
    {
-     "Version": "2012-10-17"
+     "Version": "2012-10-17",
      "Statement": [
         {
             "Action": "sts:AssumeRole",
@@ -122,6 +122,6 @@ resource "aws_security_group" "ec2_secgrp" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = local.tags
+  #tags = local.tags
 
 }
