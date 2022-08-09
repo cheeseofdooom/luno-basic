@@ -43,7 +43,7 @@ data "template_file" "nginx_conf" {
 
   vars = {
     external_port = var.wordpress_external_port
-   # url_endpoint  = aws_instance.wordpress.public_dns
+    # url_endpoint  = aws_instance.wordpress.public_dns
   }
 }
 

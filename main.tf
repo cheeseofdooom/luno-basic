@@ -13,17 +13,23 @@ resource "aws_instance" "wordpress" {
 }
 
 resource "aws_db_instance" "wordpressdb" {
-  allocated_storage    = 10
-  engine               = "mysql"
-  engine_version       = "5.7"
-  instance_class       = var.rds_instance_type
-  name                 = aws_ssm_parameter.dbname.value
-  username             = aws_ssm_parameter.dbuser.value
-  password             = aws_ssm_parameter.dbpassword.value
-  parameter_group_name = "default.mysql5.7"
-  db_subnet_group_name = aws_db_subnet_group.dbsubnet.id
-  skip_final_snapshot  = true
-  
+  allocated_storage      = 20
+  engine                 = "mysql"
+  engine_version         = "5.7"
+  instance_class         = var.rds_instance_type
+  db_name                = aws_ssm_parameter.dbname.value
+  username               = aws_ssm_parameter.dbuser.value
+  password               = aws_ssm_parameter.dbpassword.value
+  parameter_group_name   = "default.mysql5.7"
+  db_subnet_group_name   = aws_db_subnet_group.dbsubnet.id
+  skip_final_snapshot    = true
+  vpc_security_group_ids = [aws_security_group.rds_secgrp.id]
+
+  tags = merge(local.tags, {
+    Name = "wordpressdb-instance"
+  })
+
+
 }
 
 resource "aws_ssm_parameter" "dbname" {
@@ -51,18 +57,40 @@ resource "random_password" "password" {
 }
 
 resource "aws_db_subnet_group" "dbsubnet" {
-    name = "wordpress-subnet"
-    description = "word press subnet group"
-    subnet_ids = data.aws_subnet_ids.subnets.ids
-   # tags = local.tags
-  
+  name        = "wordpress-subnet"
+  description = "wordpress prefix group"
+  subnet_ids  = data.aws_subnet_ids.subnets.ids
+
+  tags = merge(local.tags, {
+    Name = "wordpress-subnet"
+  })
+
+}
+
+resource "aws_security_group" "rds_secgrp" {
+  name        = "wordpress db allow"
+  description = "RDS secgrp"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    description = "allow VPC prefixes only "
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = [data.aws_vpc.vpc.cidr_block]
+  }
+
+  tags = merge(local.tags, {
+    Name = "db-secgrp"
+  })
+
 }
 
 
 resource "aws_iam_role" "ec2role" {
-    name  = "ec2forssm"
+  name = "ec2forssm"
 
-    assume_role_policy = <<EOF
+  assume_role_policy = <<EOF
    {
      "Version": "2012-10-17",
      "Statement": [
@@ -79,20 +107,20 @@ resource "aws_iam_role" "ec2role" {
         ]
 }
 EOF
-  
+
 }
 
 resource "aws_iam_role_policy_attachment" "ec2policy" {
-    role       = aws_iam_role.ec2role.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.ec2role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
-    name = "ec2_profile"
-    role = aws_iam_role.ec2role.name
-  
+  name = "ec2_profile"
+  role = aws_iam_role.ec2role.name
+
 }
-  
+
 
 
 
@@ -122,6 +150,9 @@ resource "aws_security_group" "ec2_secgrp" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  #tags = local.tags
+  tags = merge(local.tags, {
+    Name = "ec2-secgrp"
+  })
+
 
 }
