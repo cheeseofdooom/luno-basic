@@ -1,3 +1,4 @@
+#aws-cli config and credentials store. Vault and encrypt for prod
 provider "aws" {
   region                   = var.region
   shared_config_files      = ["~/.aws/config"]

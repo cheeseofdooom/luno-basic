@@ -10,6 +10,7 @@ data "aws_vpc" "vpc" {
   id = var.vpc_id
 }
 
+# Allocate AMI Ubuntu 20.04
 data "aws_ami" "ubuntu" {
   most_recent = true
 
@@ -25,7 +26,7 @@ data "aws_ami" "ubuntu" {
 
   owners = ["099720109477"]
 }
-
+# Popluate docker template file
 data "template_file" "dockercompose" {
   template = file("./tpl/docker-compose.tpl")
 
@@ -37,7 +38,7 @@ data "template_file" "dockercompose" {
     external_port = var.wordpress_external_port
   }
 }
-
+# Populate nginx template file
 data "template_file" "nginx_conf" {
   template = file("./tpl/server-conf.tpl")
 
@@ -46,7 +47,7 @@ data "template_file" "nginx_conf" {
     # url_endpoint  = aws_instance.wordpress.public_dns
   }
 }
-
+# Populate userdata template file
 data "template_file" "userdata" {
   template = file("./tpl/userdata.tpl")
 

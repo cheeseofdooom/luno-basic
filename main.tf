@@ -1,3 +1,5 @@
+
+#Create EC2 Instance
 resource "aws_instance" "wordpress" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.ec2_instance_type
@@ -12,6 +14,7 @@ resource "aws_instance" "wordpress" {
   })
 }
 
+#Create RDB instance
 resource "aws_db_instance" "wordpressdb" {
   allocated_storage      = 20
   engine                 = "mysql"
@@ -32,6 +35,7 @@ resource "aws_db_instance" "wordpressdb" {
 
 }
 
+#SSM store for DB user
 resource "aws_ssm_parameter" "dbname" {
   name  = "/app/wordpress/DATABASE_NAME"
   type  = "String"
@@ -50,6 +54,7 @@ resource "aws_ssm_parameter" "dbpassword" {
   value = random_password.password.result
 }
 
+#Randomised Password for DB user
 resource "random_password" "password" {
   length           = 18
   special          = true
@@ -67,6 +72,7 @@ resource "aws_db_subnet_group" "dbsubnet" {
 
 }
 
+# RDS  ACL & Sec group
 resource "aws_security_group" "rds_secgrp" {
   name        = "wordpress db allow"
   description = "RDS secgrp"
@@ -86,7 +92,7 @@ resource "aws_security_group" "rds_secgrp" {
 
 }
 
-
+#IAM role for Session Manager, keyless for testing
 resource "aws_iam_role" "ec2role" {
   name = "ec2forssm"
 
@@ -123,7 +129,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 
 
 
-
+# EC2  ACL & Sec group
 resource "aws_security_group" "ec2_secgrp" {
   name        = "wordpress-instance-secgrp"
   description = "wordpress instance secgrp"
