@@ -8,3 +8,8 @@ output "public_ip" {
   value = aws_instance.wordpress.public_ip
 }
 
+#LB pubic address
+output "lb_dns" {
+  value = aws_lb.alb_proxy.dns_name
+
+}

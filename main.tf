@@ -35,6 +35,22 @@ resource "aws_db_instance" "wordpressdb" {
 
 }
 
+#Create ALB instanace
+
+resource "aws_lb" "alb_proxy" {
+  name               = "lb-proxy"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_secgrp.id]
+  subnets            = data.aws_subnet_ids.subnets.ids
+
+  tags = merge(local.tags, {
+    Name = "alb-instance"
+  })
+
+}
+
+
 #SSM store for DB user
 resource "aws_ssm_parameter" "dbname" {
   name  = "/app/wordpress/DATABASE_NAME"
@@ -162,3 +178,80 @@ resource "aws_security_group" "ec2_secgrp" {
 
 
 }
+
+# ALB  ACL & Sec group
+resource "aws_security_group" "alb_secgrp" {
+  name        = "alb-secgrp"
+  description = "app load balancer instance secgrp"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = var.wordpress_external_port
+    to_port     = var.wordpress_external_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.tags, {
+    Name = "alb-secgrp"
+  })
+
+
+}
+
+#Create target group for lb
+resource "aws_lb_target_group" "lbtgt" {
+  for_each = toset(["80"])
+  name     = "lb-tgt-grp"
+  port     = each.key
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  tags = merge(local.tags, {
+    Name = "alb-tgtgrp"
+  })
+
+}
+
+#Create Load balancer attachment to EC2 instance
+resource "aws_lb_target_group_attachment" "ec2tgt" {
+  for_each         = toset(["80"])
+  target_group_arn = aws_lb_target_group.lbtgt[each.key].arn
+  target_id        = aws_instance.wordpress.id
+
+
+}
+
+#Create lb to EC2 listener
+
+resource "aws_lb_listener" "name" {
+  for_each          = toset(["80"])
+  load_balancer_arn = aws_lb.alb_proxy.id
+  port              = each.key
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lbtgt[each.key].arn
+
+
+  }
+  tags = merge(local.tags, {
+    Name = "alb-lis"
+  })
+
+}
+
