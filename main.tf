@@ -4,7 +4,7 @@ resource "aws_instance" "wordpress" {
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.ec2_instance_type
   associate_public_ip_address = true
-  subnet_id                   = sort(data.aws_subnet_ids.subnets.ids)[1]
+  subnet_id                   = sort(data.aws_subnet_ids.subnets.ids)[0] #adjust subnet where necessary 
   security_groups             = [aws_security_group.ec2_secgrp.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.id
   user_data                   = data.template_file.userdata.rendered
