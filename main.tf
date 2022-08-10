@@ -83,7 +83,7 @@ resource "aws_security_group" "rds_secgrp" {
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] #[data.aws_vpc.vpc.cidr_block]
+    cidr_blocks = [data.aws_vpc.vpc.cidr_block] #["0.0.0.0/0"] 
   }
 
   tags = merge(local.tags, {
