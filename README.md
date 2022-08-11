@@ -11,3 +11,6 @@ Create new Terraform Workspace if required
 Run:
 terraform plan -var-file input.tfvars -out output.tfplan  
 terraform apply output.tfplan  
+
+To Destroy: 
+terraform destroy -var-file input.tfvars  
