@@ -41,3 +41,9 @@ variable "database_name" {
   description = "Wordpress database name"
   type        = string
 }
+
+variable "ssl_policy" {
+  type        = string
+  description = "load balancer listener policy"
+  default     = "ELBSecurityPolicy-2016-08"
+}

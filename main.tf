@@ -1,4 +1,11 @@
 
+resource "aws_acm_certificate" "alb-cert" {
+  private_key      = file("./cert/private.pem")
+  certificate_body = file("./cert/public.pem")
+  #certificate_chain = file("./cert/cert.pem") ACM failed when trying to parse :(
+}
+
+
 #Create EC2 Instance
 resource "aws_instance" "wordpress" {
   ami                         = data.aws_ami.ubuntu.id
@@ -144,7 +151,6 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 
-
 # EC2  ACL & Sec group
 resource "aws_security_group" "ec2_secgrp" {
   name        = "wordpress-instance-secgrp"
@@ -215,9 +221,9 @@ resource "aws_security_group" "alb_secgrp" {
 
 #Create target group for lb
 resource "aws_lb_target_group" "lbtgt" {
-  for_each = toset(["80"])
+
   name     = "lb-tgt-grp"
-  port     = each.key
+  port     = "80"
   protocol = "HTTP"
   vpc_id   = var.vpc_id
 
@@ -229,29 +235,57 @@ resource "aws_lb_target_group" "lbtgt" {
 
 #Create Load balancer attachment to EC2 instance
 resource "aws_lb_target_group_attachment" "ec2tgt" {
-  for_each         = toset(["80"])
-  target_group_arn = aws_lb_target_group.lbtgt[each.key].arn
+
+  target_group_arn = aws_lb_target_group.lbtgt.arn
   target_id        = aws_instance.wordpress.id
 
 
 }
 
-#Create lb to EC2 listener
 
-resource "aws_lb_listener" "name" {
-  for_each          = toset(["80"])
+
+#Create lb to EC2 listener redirect
+resource "aws_lb_listener" "name_redirect" {
+
   load_balancer_arn = aws_lb.alb_proxy.id
-  port              = each.key
+  port              = "80"
+  protocol          = "HTTP"
 
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.lbtgt[each.key].arn
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
 
 
   }
   tags = merge(local.tags, {
-    Name = "alb-lis"
+    Name = "alb-lis-re"
   })
 
 }
 
+#Create lb to EC2 listener forward
+resource "aws_lb_listener" "name_forward" {
+
+  load_balancer_arn = aws_lb.alb_proxy.id
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_acm_certificate.alb-cert.arn
+
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lbtgt.arn
+
+
+  }
+  tags = merge(local.tags, {
+    Name = "alb-lis-fw"
+  })
+
+}
